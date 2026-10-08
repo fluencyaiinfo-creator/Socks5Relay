@@ -31,6 +31,7 @@ object SettingsStore {
     private const val KEY_PROTOCOL = "protocol"
     private const val KEY_THEME_MODE = "theme_mode"
     private const val KEY_KILL_SWITCH_ENABLED = "kill_switch_enabled"
+    private const val KEY_AUTO_RECONNECT_ENABLED = "auto_reconnect_enabled"
 
     fun save(context: Context, settings: SocksSettings) {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit()
@@ -84,5 +85,21 @@ object SettingsStore {
             .putBoolean(KEY_KILL_SWITCH_ENABLED, enabled)
             .apply()
     }
-}
 
+    /**
+     * When true (the default), [SocksVpnService] automatically brings the
+     * connection back whenever it drops (proxy went down, the tunnel died,
+     * network changed) instead of staying disconnected until the user taps
+     * Connect again. An explicit tap on Disconnect always wins.
+     */
+    fun isAutoReconnectEnabled(context: Context): Boolean {
+        return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .getBoolean(KEY_AUTO_RECONNECT_ENABLED, true)
+    }
+
+    fun setAutoReconnectEnabled(context: Context, enabled: Boolean) {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit()
+            .putBoolean(KEY_AUTO_RECONNECT_ENABLED, enabled)
+            .apply()
+    }
+}
