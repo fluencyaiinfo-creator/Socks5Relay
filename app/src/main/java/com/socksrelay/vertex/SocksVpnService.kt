@@ -49,6 +49,14 @@ class SocksVpnService : VpnService() {
         private const val VPN_ADDRESS = "10.0.0.2"
         private const val VPN_ADDRESS_PREFIX_LEN = 32
         private const val VPN_DNS = "1.1.1.1"
+        // IPv6 is not proxied by this app, so it is blocked instead: the
+        // tunnel claims ALL IPv6 traffic (::/0) via this placeholder
+        // address, and PacketRouter drops whatever arrives. Without this,
+        // IPv6 traffic would bypass the tunnel and go out on the real
+        // network — a leak that neither the proxy nor the Kill Switch sees.
+        // (fd00::/8 is a private range, never routable on the internet.)
+        private const val VPN_ADDRESS_V6 = "fd00:5a5a:5a5a::2"
+        private const val VPN_ADDRESS_V6_PREFIX_LEN = 128
         private const val VPN_MTU = 1500
 
         // ---- Kill switch / auto-reconnect health monitor ----
@@ -159,6 +167,18 @@ class SocksVpnService : VpnService() {
             // router loop into a CPU-burning busy-spin instead of an
             // efficient blocking read.
             .setBlocking(true)
+
+        // Capture IPv6 too, so it can be blocked rather than leak (see
+        // VPN_ADDRESS_V6). If a device refuses this, connecting still works
+        // exactly as before, but IPv6 may leak, so say so clearly in the logs.
+        try {
+            builder.addAddress(VPN_ADDRESS_V6, VPN_ADDRESS_V6_PREFIX_LEN)
+            builder.addRoute("::", 0)
+            AppLog.i(TAG, "IPv6 traffic is blocked (apps will use IPv4 through the proxy)")
+        } catch (e: Exception) {
+            AppLog.w(TAG, "Could not block IPv6 on this device: ${e.message}",
+                "IPv6 traffic may bypass the proxy. If your network has IPv6, turn it off for a strict leak-free setup.")
+        }
 
         // IMPORTANT: do NOT also call builder.addDisallowedApplication(packageName)
         // here. protect() (used per-socket in PacketRouter/Socks5Client) and
