@@ -35,6 +35,10 @@ class SettingsActivity : AppCompatActivity() {
         binding.killSwitchSwitch.setOnCheckedChangeListener { _, checked ->
             SettingsStore.setKillSwitchEnabled(this, checked)
         }
+        binding.autoReconnectSwitch.isChecked = SettingsStore.isAutoReconnectEnabled(this)
+        binding.autoReconnectSwitch.setOnCheckedChangeListener { _, checked ->
+            SettingsStore.setAutoReconnectEnabled(this, checked)
+        }
         binding.systemVpnSettingsRow.setOnClickListener { openSystemVpnSettings() }
 
         binding.appVersionValueText.text = BuildConfig.VERSION_NAME
