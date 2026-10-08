@@ -75,6 +75,8 @@
     <string name="settings_split_tunneling_hint">When on, only the apps you choose use the VPN tunnel — everything else on your device uses your normal connection directly.</string>
 
     <string name="settings_section_security">Security</string>
+    <string name="settings_auto_reconnect">Auto reconnect</string>
+    <string name="settings_auto_reconnect_hint">When on (recommended), if the connection drops the app keeps trying to reconnect to your proxy by itself and restores the VPN as soon as it is reachable again. Tapping Disconnect always stops it.</string>
     <string name="settings_kill_switch">Kill Switch</string>
     <string name="settings_kill_switch_hint">When on (recommended), if the proxy goes down mid-session the app keeps all traffic blocked instead of ever falling back to your normal, unprotected connection. When off, it will disconnect the VPN after about a minute of the proxy being unreachable so you get your normal internet back.</string>
     <string name="settings_open_system_vpn_settings">Android system-level Kill Switch</string>
@@ -94,4 +96,3 @@
         <item quantity="other">%d apps selected</item>
     </plurals>
 </resources>
-
