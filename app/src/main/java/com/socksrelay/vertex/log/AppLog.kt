@@ -59,6 +59,22 @@ object AppLog {
      * Logcat. Ad code should already log only generic text (see AdManager),
      * this just guarantees a future slip can't leak one.
      */
+    /**
+     * Housekeeping from the free-proxy list (which sources were fetched, how
+     * many proxies were found, cache/refresh chatter) and from the ad SDK is
+     * background noise: on the Logs screen people only want to see what is
+     * happening with the one proxy they are connecting to or testing —
+     * whether it's their own or a free one. Anything logged under these tags
+     * never reaches the Logs screen. (It still goes to Logcat for debugging,
+     * and the ad-ID scrubber below still applies.)
+     */
+    private val hiddenTags = setOf(
+        "Ads",
+        "FreeProxyFetcher", "FreeProxyRepository", "UnlockStore", "FavoritesStore"
+    )
+    private fun isHidden(tag: String): Boolean =
+        tag in hiddenTags || tag.startsWith("Source ")
+
     private val adIdRegex = Regex("""ca-app-pub-\d+\s*[~/]\s*\d+""", RegexOption.IGNORE_CASE)
     private fun clean(text: String): String = adIdRegex.replace(text, "[ad]")
 
@@ -88,6 +104,7 @@ object AppLog {
 
     @Synchronized
     private fun push(entry: LogEntry) {
+        if (isHidden(entry.tag)) return
         entries.addLast(entry)
         while (entries.size > MAX_ENTRIES) entries.removeFirst()
         notifyListeners()
