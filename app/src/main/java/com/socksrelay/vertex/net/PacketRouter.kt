@@ -61,6 +61,7 @@ class PacketRouter(
         AppLog.i(TAG, "Packet router loop starting")
         val buffer = ByteArray(32767)
         var packetsRead = 0
+        var ipv6Dropped = 0L
         try {
             while (isRunning()) {
                 val length = input.read(buffer)
@@ -68,6 +69,14 @@ class PacketRouter(
                 packetsRead++
                 if (packetsRead == 1) {
                     AppLog.success(TAG, "First packet read from tun interface — device traffic is reaching the app")
+                }
+
+                // IPv6 is intentionally not proxied. The tunnel captures it
+                // (see SocksVpnService) and it is dropped here, so it can
+                // never leak onto the real network; apps fall back to IPv4.
+                if (length > 0 && (buffer[0].toInt() and 0xF0) == 0x60) {
+                    ipv6Dropped++
+                    continue
                 }
 
                 val ip = IpV4Packet.parse(buffer, length)
@@ -89,7 +98,8 @@ class PacketRouter(
         } catch (e: IOException) {
             AppLog.i(TAG, "Router loop ending: ${e.message}")
         } finally {
-            AppLog.i(TAG, "Router loop stopped. Packets read: $packetsRead, flows opened: ${flowsOpened.get()}, flows failed: ${flowsFailed.get()}")
+            AppLog.i(TAG, "Router loop stopped. Packets read: $packetsRead, flows opened: ${flowsOpened.get()}, flows failed: ${flowsFailed.get()}" +
+                if (ipv6Dropped > 0) ", IPv6 packets blocked: $ipv6Dropped" else "")
             sessions.values.forEach { runCatching { it.socket?.close() } }
             sessions.clear()
         }
