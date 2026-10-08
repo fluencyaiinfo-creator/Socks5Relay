@@ -104,6 +104,40 @@
                 android:textColor="@color/log_info"
                 android:text="@string/settings_kill_switch_hint" />
 
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingStart="20dp"
+                android:paddingEnd="20dp"
+                android:paddingTop="14dp"
+                android:paddingBottom="14dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textSize="16sp"
+                    android:text="@string/settings_auto_reconnect" />
+
+                <Switch
+                    android:id="@+id/autoReconnectSwitch"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingStart="20dp"
+                android:paddingEnd="20dp"
+                android:paddingBottom="8dp"
+                android:textSize="12sp"
+                android:textColor="@color/log_info"
+                android:text="@string/settings_auto_reconnect_hint" />
+
             <LinearLayout android:id="@+id/systemVpnSettingsRow" style="@style/SettingsRow">
                 <TextView style="@style/SettingsRowTitle" android:text="@string/settings_open_system_vpn_settings" />
             </LinearLayout>
