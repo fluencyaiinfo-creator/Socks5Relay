@@ -1,0 +1,39 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,20 L80,32 L80,54 C80,72 68,84 54,90 C40,84 28,72 28,54 L28,32 Z" />
+    <!--
+      "SR" monogram, built as a simple blocky/pixel-style glyph (a 5x7 dot-
+      matrix-style grid per letter, each "on" cell a 4x4 unit square) rather
+      than smooth font curves — this stays crisp and legible at small
+      launcher-icon sizes in a way that thin curved letterforms often don't.
+      S occupies grid columns at x=32..52, R at x=56..76, both y=44..72.
+    -->
+    <path
+        android:fillColor="@color/brand_primary_dark"
+        android:pathData="
+            M32,44 h20 v4 h-20 Z
+            M32,48 h4 v4 h-4 Z
+            M32,52 h4 v4 h-4 Z
+            M32,56 h20 v4 h-20 Z
+            M48,60 h4 v4 h-4 Z
+            M48,64 h4 v4 h-4 Z
+            M32,68 h20 v4 h-20 Z
+            M56,44 h16 v4 h-16 Z
+            M56,48 h4 v4 h-4 Z
+            M72,48 h4 v4 h-4 Z
+            M56,52 h4 v4 h-4 Z
+            M72,52 h4 v4 h-4 Z
+            M56,56 h16 v4 h-16 Z
+            M56,60 h4 v4 h-4 Z
+            M64,60 h4 v4 h-4 Z
+            M56,64 h4 v4 h-4 Z
+            M68,64 h4 v4 h-4 Z
+            M56,68 h4 v4 h-4 Z
+            M72,68 h4 v4 h-4 Z" />
+</vector>
+

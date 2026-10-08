@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Required by the AdMob SDK for the advertising ID (used for ad measurement/personalization). -->
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID" />
+
+    <!--
+      Android 11+ hides other installed apps from PackageManager queries by
+      default (package visibility). This <queries> block asks only for apps
+      that have a launcher icon — enough for the split-tunneling app picker
+      to show a normal "which apps do you use" list, without requesting the
+      much more sensitive QUERY_ALL_PACKAGES permission (which Play Store
+      requires special justification for and generally discourages).
+    -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+    </queries>
+
+    <application
+        android:name=".SocksRelayApp"
+        android:allowBackup="true"
+        android:label="@string/app_name"
+        android:icon="@mipmap/ic_launcher"
+        android:theme="@style/Theme.SocksRelay"
+        android:localeConfig="@xml/locales_config"
+        android:supportsRtl="true">
+
+        <!-- AdMob App ID — required by the SDK, separate from the individual ad unit IDs used in code (see ads/AdIds.kt). -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-9452296761063041~4718556318" />
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".LogsActivity"
+            android:exported="false"
+            android:label="@string/action_view_logs" />
+
+        <activity
+            android:name=".CountryListActivity"
+            android:exported="false"
+            android:label="@string/free_proxy_title" />
+
+        <activity
+            android:name=".CountryProxiesActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".FavoritesActivity"
+            android:exported="false"
+            android:label="@string/favorites_title" />
+
+        <activity
+            android:name=".SettingsActivity"
+            android:exported="false"
+            android:label="@string/settings_title" />
+
+        <activity
+            android:name=".AppListActivity"
+            android:exported="false"
+            android:label="@string/split_tunnel_choose_apps" />
+
+        <activity
+            android:name=".DocumentViewerActivity"
+            android:exported="false" />
+
+        <!--
+          This is the declaration that turns SocksVpnService into a real
+          Android VpnService. The BIND_VPN_SERVICE permission + the
+          android.net.VpnService intent-filter action are both mandatory;
+          Android will refuse to bind it otherwise.
+        -->
+        <service
+            android:name=".SocksVpnService"
+            android:permission="android.permission.BIND_VPN_SERVICE"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <intent-filter>
+                <action android:name="android.net.VpnService" />
+            </intent-filter>
+        </service>
+
+    </application>
+</manifest>

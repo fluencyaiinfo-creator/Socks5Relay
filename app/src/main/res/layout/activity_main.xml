@@ -1,0 +1,555 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="?android:attr/windowBackground"
+    android:paddingStart="14dp"
+    android:paddingEnd="14dp">
+
+    <!-- Compact branded header -->
+    <LinearLayout
+        android:id="@+id/headerContainer"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        app:layout_constraintBottom_toTopOf="@id/statusCard"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHeight_min="52dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_chainStyle="spread_inside"
+        app:layout_constraintVertical_weight="60">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Socks5 Relay"
+                android:textColor="@color/brand_primary_dark"
+                android:textSize="28sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="VPN &amp; Proxy"
+                android:textColor="@color/log_info"
+                android:textSize="15sp" />
+        </LinearLayout>
+
+        <ImageButton
+            android:id="@+id/settingsButton"
+            android:layout_width="46dp"
+            android:layout_height="46dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/settings_title"
+            android:padding="9dp"
+            android:src="@android:drawable/ic_menu_manage" />
+    </LinearLayout>
+
+    <!-- Compact connection status -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/statusCard"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="6dp"
+        app:cardBackgroundColor="#F2F6FF"
+        app:cardCornerRadius="18dp"
+        app:cardElevation="0dp"
+        app:strokeColor="#D9E5FF"
+        app:strokeWidth="1dp"
+        app:layout_constraintBottom_toTopOf="@id/statsRow"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHeight_min="72dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/headerContainer"
+        app:layout_constraintVertical_weight="82">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp">
+
+            <TextView
+                android:id="@+id/statusIndicator"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="9dp"
+                android:text="●"
+                android:textColor="@color/status_disconnected_gray"
+                android:textSize="21sp" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/statusText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/status_disconnected"
+                    android:textColor="#4A4A4A"
+                    android:textSize="22sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/activeProxyText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:text="@string/stat_no_active_connection"
+                    android:textColor="@color/log_info"
+                    android:textSize="14sp" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/protocolText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="end"
+                android:maxLines="1"
+                android:text="@string/stat_protocol_not_connected"
+                android:textColor="@color/log_info"
+                android:textSize="13sp" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Session statistics -->
+    <LinearLayout
+        android:id="@+id/statsRow"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="6dp"
+        android:orientation="horizontal"
+        app:layout_constraintBottom_toTopOf="@id/quickActionsRow"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHeight_min="62dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/statusCard"
+        app:layout_constraintVertical_weight="72">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@drawable/card_stat"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="5dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/stat_session"
+                android:textColor="@color/log_info"
+                android:textSize="12sp" />
+
+            <TextView
+                android:id="@+id/sessionTimeText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="00:00:00"
+                android:textSize="17sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <Space android:layout_width="5dp" android:layout_height="1dp" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@drawable/card_stat"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="5dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/stat_upload"
+                android:textColor="@color/log_info"
+                android:textSize="12sp" />
+
+            <TextView
+                android:id="@+id/uploadText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0 B"
+                android:textSize="17sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <Space android:layout_width="5dp" android:layout_height="1dp" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@drawable/card_stat"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="5dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/stat_download"
+                android:textColor="@color/log_info"
+                android:textSize="12sp" />
+
+            <TextView
+                android:id="@+id/downloadText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0 B"
+                android:textSize="17sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Quick actions -->
+    <LinearLayout
+        android:id="@+id/quickActionsRow"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="6dp"
+        android:orientation="horizontal"
+        app:layout_constraintBottom_toTopOf="@id/pasteLayout"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHeight_min="46dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/statsRow"
+        app:layout_constraintVertical_weight="52">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/freeProxiesButton"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_marginEnd="4dp"
+            android:layout_weight="1"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:maxLines="2"
+            android:paddingStart="6dp"
+            android:paddingEnd="6dp"
+            android:text="@string/action_browse_free_proxies"
+            android:textSize="13sp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/favoritesButton"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_marginStart="4dp"
+            android:layout_weight="1"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:maxLines="2"
+            android:paddingStart="6dp"
+            android:paddingEnd="6dp"
+            android:text="@string/action_favorites"
+            android:textSize="13sp" />
+    </LinearLayout>
+
+    <!-- Paste row -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/pasteLayout"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="6dp"
+        android:layout_marginEnd="5dp"
+        android:hint="@string/hint_paste"
+        app:boxBackgroundMode="filled"
+        app:layout_constraintBottom_toTopOf="@id/hostLayout"
+        app:layout_constraintEnd_toStartOf="@id/pasteApplyButton"
+        app:layout_constraintHeight_min="54dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/quickActionsRow"
+        app:layout_constraintVertical_weight="58">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/pasteInput"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:inputType="textUri"
+            android:maxLines="1"
+            android:textSize="14sp" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/pasteApplyButton"
+        style="@style/Widget.MaterialComponents.Button.TextButton"
+        android:layout_width="140dp"
+        android:layout_height="0dp"
+        android:gravity="center"
+        android:insetTop="0dp"
+        android:insetBottom="0dp"
+        android:maxLines="3"
+        android:paddingStart="3dp"
+        android:paddingEnd="3dp"
+        android:text="@string/action_fill_from_pasted"
+        android:textSize="11sp"
+        app:layout_constraintBottom_toBottomOf="@id/pasteLayout"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@id/pasteLayout" />
+
+    <!-- Host + port -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/hostLayout"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="6dp"
+        android:layout_marginEnd="5dp"
+        android:hint="@string/hint_host"
+        app:boxBackgroundMode="filled"
+        app:layout_constraintBottom_toTopOf="@id/protocolBlock"
+        app:layout_constraintEnd_toStartOf="@id/portLayout"
+        app:layout_constraintHeight_min="54dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/pasteLayout"
+        app:layout_constraintVertical_weight="58">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/hostInput"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:inputType="textUri"
+            android:maxLines="1"
+            android:textSize="15sp" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/portLayout"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginStart="5dp"
+        android:hint="@string/hint_port"
+        app:boxBackgroundMode="filled"
+        app:layout_constraintBottom_toBottomOf="@id/hostLayout"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@id/hostLayout"
+        app:layout_constraintTop_toTopOf="@id/hostLayout">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/portInput"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:inputType="number"
+            android:maxLines="1"
+            android:textSize="15sp" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Protocol selector (label + radios kept together as one block) -->
+    <LinearLayout
+        android:id="@+id/protocolBlock"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="4dp"
+        android:gravity="center_vertical"
+        android:orientation="vertical"
+        app:layout_constraintBottom_toTopOf="@id/usernameLayout"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHeight_min="58dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/hostLayout"
+        app:layout_constraintVertical_weight="64">
+
+        <TextView
+            android:id="@+id/protocolLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:text="@string/section_protocol"
+            android:textColor="@color/log_info"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <RadioGroup
+            android:id="@+id/protocolRadioGroup"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <RadioButton
+                android:id="@+id/protocolSocks5"
+                android:layout_width="0dp"
+                android:layout_height="36dp"
+                android:layout_weight="1"
+                android:buttonTint="@color/brand_primary_dark"
+                android:minHeight="0dp"
+                android:padding="0dp"
+                android:text="SOCKS5"
+                android:textSize="14sp" />
+
+            <RadioButton
+                android:id="@+id/protocolSocks4"
+                android:layout_width="0dp"
+                android:layout_height="36dp"
+                android:layout_weight="1"
+                android:buttonTint="@color/brand_primary_dark"
+                android:minHeight="0dp"
+                android:padding="0dp"
+                android:text="SOCKS4"
+                android:textSize="14sp" />
+
+            <RadioButton
+                android:id="@+id/protocolHttp"
+                android:layout_width="0dp"
+                android:layout_height="36dp"
+                android:layout_weight="1"
+                android:buttonTint="@color/brand_primary_dark"
+                android:minHeight="0dp"
+                android:padding="0dp"
+                android:text="HTTP"
+                android:textSize="14sp" />
+        </RadioGroup>
+    </LinearLayout>
+
+    <!-- Credentials -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/usernameLayout"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="4dp"
+        android:layout_marginEnd="5dp"
+        android:hint="@string/hint_username"
+        app:boxBackgroundMode="filled"
+        app:layout_constraintBottom_toTopOf="@id/testProxyButton"
+        app:layout_constraintEnd_toStartOf="@id/passwordLayout"
+        app:layout_constraintHeight_min="54dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/protocolBlock"
+        app:layout_constraintVertical_weight="58">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/usernameInput"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:inputType="text"
+            android:maxLines="1"
+            android:textSize="14sp" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/passwordLayout"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginStart="5dp"
+        android:hint="@string/hint_password"
+        app:boxBackgroundMode="filled"
+        app:layout_constraintBottom_toBottomOf="@id/usernameLayout"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@id/usernameLayout"
+        app:layout_constraintTop_toTopOf="@id/usernameLayout">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/passwordInput"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:inputType="textPassword"
+            android:maxLines="1"
+            android:textSize="14sp" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Proxy test -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/testProxyButton"
+        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="6dp"
+        android:insetTop="0dp"
+        android:insetBottom="0dp"
+        android:text="@string/action_test_proxy"
+        android:textSize="14sp"
+        app:layout_constraintBottom_toTopOf="@id/testResultText"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHeight_min="44dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/usernameLayout"
+        app:layout_constraintVertical_weight="50" />
+
+    <TextView
+        android:id="@+id/testResultText"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:minHeight="68dp"
+        android:layout_marginTop="4dp"
+        android:paddingTop="3dp"
+        android:paddingBottom="3dp"
+        android:gravity="top|start"
+        android:maxLines="5"
+        android:text=""
+        android:textColor="@color/log_success"
+        android:textSize="12sp"
+        android:lineSpacingExtra="1dp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toTopOf="@id/connectButton"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/testProxyButton" />
+
+    <!-- Main connection action -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/connectButton"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="6dp"
+        android:insetTop="0dp"
+        android:insetBottom="0dp"
+        android:text="@string/action_connect"
+        android:textSize="17sp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toTopOf="@id/logsButton"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHeight_min="50dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/testResultText"
+        app:layout_constraintVertical_weight="58"
+        app:layout_goneMarginTop="6dp" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/logsButton"
+        style="@style/Widget.MaterialComponents.Button.TextButton"
+        android:layout_width="wrap_content"
+        android:layout_height="0dp"
+        android:layout_marginTop="2dp"
+        android:insetTop="0dp"
+        android:insetBottom="0dp"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:text="@string/action_view_logs"
+        android:textSize="14sp"
+        app:layout_constraintBottom_toTopOf="@id/bottomBanner"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHeight_min="34dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/connectButton"
+        app:layout_constraintVertical_weight="40" />
+
+    <!-- Existing bottom ad slot + Vertex credit. Kept as the final anchored footer. -->
+    <include
+        android:id="@+id/bottomBanner"
+        layout="@layout/footer"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

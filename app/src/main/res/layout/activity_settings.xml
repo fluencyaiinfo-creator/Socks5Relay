@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingBottom="16dp">
+
+            <TextView style="@style/SettingsSectionHeader" android:text="@string/settings_section_preferences" />
+
+            <LinearLayout android:id="@+id/themeRow" style="@style/SettingsRow">
+                <TextView style="@style/SettingsRowTitle" android:text="@string/action_theme" />
+                <TextView android:id="@+id/themeValueText" style="@style/SettingsRowValue" />
+            </LinearLayout>
+
+            <LinearLayout android:id="@+id/languageRow" style="@style/SettingsRow">
+                <TextView style="@style/SettingsRowTitle" android:text="@string/settings_language" />
+                <TextView android:id="@+id/languageValueText" style="@style/SettingsRowValue" />
+            </LinearLayout>
+
+            <TextView style="@style/SettingsSectionHeader" android:text="@string/settings_section_network" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingStart="20dp"
+                android:paddingEnd="20dp"
+                android:paddingTop="14dp"
+                android:paddingBottom="14dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textSize="16sp"
+                    android:text="@string/settings_split_tunneling" />
+
+                <Switch
+                    android:id="@+id/splitTunnelSwitch"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+
+            </LinearLayout>
+
+            <LinearLayout android:id="@+id/chooseAppsRow" style="@style/SettingsRow">
+                <TextView style="@style/SettingsRowTitle" android:text="@string/split_tunnel_choose_apps" />
+                <TextView android:id="@+id/chooseAppsValueText" style="@style/SettingsRowValue" />
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingStart="20dp"
+                android:paddingEnd="20dp"
+                android:paddingBottom="8dp"
+                android:textSize="12sp"
+                android:textColor="@color/log_info"
+                android:text="@string/settings_split_tunneling_hint" />
+
+            <TextView style="@style/SettingsSectionHeader" android:text="@string/settings_section_security" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingStart="20dp"
+                android:paddingEnd="20dp"
+                android:paddingTop="14dp"
+                android:paddingBottom="14dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textSize="16sp"
+                    android:text="@string/settings_kill_switch" />
+
+                <Switch
+                    android:id="@+id/killSwitchSwitch"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingStart="20dp"
+                android:paddingEnd="20dp"
+                android:paddingBottom="8dp"
+                android:textSize="12sp"
+                android:textColor="@color/log_info"
+                android:text="@string/settings_kill_switch_hint" />
+
+            <LinearLayout android:id="@+id/systemVpnSettingsRow" style="@style/SettingsRow">
+                <TextView style="@style/SettingsRowTitle" android:text="@string/settings_open_system_vpn_settings" />
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingStart="20dp"
+                android:paddingEnd="20dp"
+                android:paddingBottom="8dp"
+                android:textSize="12sp"
+                android:textColor="@color/log_info"
+                android:text="@string/settings_open_system_vpn_settings_hint" />
+
+            <TextView style="@style/SettingsSectionHeader" android:text="@string/settings_section_about" />
+
+            <LinearLayout android:id="@+id/appVersionRow" style="@style/SettingsRow" android:clickable="false" android:focusable="false">
+                <TextView style="@style/SettingsRowTitle" android:text="@string/settings_app_version" />
+                <TextView android:id="@+id/appVersionValueText" style="@style/SettingsRowValue" />
+            </LinearLayout>
+
+            <LinearLayout android:id="@+id/contactUsRow" style="@style/SettingsRow">
+                <TextView style="@style/SettingsRowTitle" android:text="@string/settings_contact_us" />
+            </LinearLayout>
+
+            <LinearLayout android:id="@+id/privacyPolicyRow" style="@style/SettingsRow">
+                <TextView style="@style/SettingsRowTitle" android:text="@string/settings_privacy_policy" />
+            </LinearLayout>
+
+            <LinearLayout android:id="@+id/termsRow" style="@style/SettingsRow">
+                <TextView style="@style/SettingsRowTitle" android:text="@string/settings_terms_of_service" />
+            </LinearLayout>
+
+            <LinearLayout android:id="@+id/aboutUsRow" style="@style/SettingsRow">
+                <TextView style="@style/SettingsRowTitle" android:text="@string/settings_about_us" />
+            </LinearLayout>
+
+        </LinearLayout>
+    </ScrollView>
+
+    <include layout="@layout/footer" />
+
+</LinearLayout>

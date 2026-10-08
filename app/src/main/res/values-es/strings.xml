@@ -1,0 +1,80 @@
+<resources>
+    <string name="app_name">Socks5 Relay</string>
+    <string name="status_disconnected">Desconectado</string>
+    <string name="status_connected">Conectado</string>
+    <string name="hint_host">Host SOCKS5</string>
+    <string name="hint_port">Puerto SOCKS5</string>
+    <string name="section_protocol">Protocolo</string>
+    <string name="hint_paste">Pegar proxy: ip:puerto o ip:puerto@usuario:contraseña</string>
+    <string name="action_fill_from_pasted">Rellenar campos con el texto pegado</string>
+    <string name="section_manual_entry">O introducir manualmente</string>
+    <string name="paste_parse_failed">No se reconoce ese formato. Usa ip:puerto o ip:puerto@usuario:contraseña.</string>
+    <string name="paste_parse_success">Campos rellenados abajo.</string>
+    <string name="hint_username">Usuario (dejar en blanco si no aplica)</string>
+    <string name="hint_password">Contraseña (dejar en blanco si no aplica)</string>
+    <string name="section_auth_optional">Autenticación del proxy (opcional)</string>
+    <string name="default_host">127.0.0.1</string>
+    <string name="default_port">1080</string>
+    <string name="action_connect">Conectar</string>
+    <string name="action_disconnect">Desconectar</string>
+    <string name="action_test_proxy">Probar proxy</string>
+    <string name="action_view_logs">Ver registros</string>
+    <string name="action_copy_logs">Copiar todo</string>
+    <string name="action_clear_logs">Borrar</string>
+    <string name="testing_proxy">Probando proxy…</string>
+    <string name="logs_empty">Aún no hay registros. Conecta o prueba el proxy para ver actividad aquí.</string>
+    <string name="logs_copied">Registros copiados al portapapeles</string>
+    <string name="logs_truncated_notice">Mostrando los %2$d registros más recientes de %1$d. Toca Copiar todo para obtenerlos todos.</string>
+    <string name="vpn_notification_channel">Estado de la VPN</string>
+    <string name="vpn_notification_title">Socks5 Relay – VPN &amp; Proxy activo</string>
+
+    <string name="action_theme">Tema</string>
+    <string name="theme_system">Predeterminado del sistema</string>
+    <string name="theme_light">Claro</string>
+    <string name="theme_dark">Oscuro</string>
+
+    <string name="action_browse_free_proxies">Explorar proxies gratuitos</string>
+    <string name="free_proxy_title">Proxies gratuitos</string>
+    <string name="free_proxy_last_updated">%1$d proxies · actualizado %2$s</string>
+    <string name="free_proxy_loading">Cargando lista de proxies…</string>
+    <string name="free_proxy_empty">Aún no hay proxies disponibles. Desliza hacia abajo para actualizar o revisa tu conexión.</string>
+    <string name="action_refresh">Actualizar</string>
+    <string name="action_copy">Copiar</string>
+    <string name="action_test">Probar</string>
+    <string name="proxy_copied">Copiado: %1$s</string>
+    <string name="footer_text">Powered by VERTEX TECH SOLUTIONS</string>
+    <string name="action_favorites">Favoritos</string>
+    <string name="action_save_favorite">Guardar</string>
+    <string name="action_remove_favorite">Eliminar</string>
+    <string name="favorite_saved">Guardado en favoritos</string>
+    <string name="favorite_removed">Eliminado de favoritos</string>
+    <string name="favorites_title">Proxies favoritos</string>
+    <string name="favorites_empty">Aún no tienes favoritos. Prueba y guarda proxies desde el explorador para verlos aquí.</string>
+    <string name="refreshing">Actualizando…</string>
+    <string name="free_proxy_no_protocol_selected">Selecciona al menos un protocolo arriba para ver proxies.</string>
+    <string name="action_watch_ad_to_unlock">Ver anuncio para desbloquear todos los proxies</string>
+    <string name="unlock_bar_info">Mostrando %1$d de %2$d proxies para este país. Ve un anuncio corto para desbloquear el resto.</string>
+    <string name="unlock_ad_not_ready">Anuncio no disponible todavía — inténtalo de nuevo en un momento.</string>
+    <string name="unlock_success">¡Desbloqueado! Ahora se muestran todos los proxies de este país.</string>
+
+    <string name="settings_title">Configuración</string>
+    <string name="settings_section_preferences">Preferencias</string>
+    <string name="settings_language">Idioma</string>
+    <string name="settings_section_network">Red</string>
+    <string name="settings_split_tunneling">Túnel dividido</string>
+    <string name="settings_split_tunneling_hint">Cuando está activado, solo las apps que elijas usarán el túnel VPN — el resto de tu dispositivo usará tu conexión normal directamente.</string>
+    <string name="settings_section_about">Acerca de</string>
+    <string name="settings_app_version">Versión de la app</string>
+    <string name="settings_contact_us">Contáctanos</string>
+    <string name="settings_privacy_policy">Política de privacidad</string>
+    <string name="settings_terms_of_service">Términos de servicio</string>
+    <string name="settings_about_us">Sobre nosotros</string>
+    <string name="split_tunnel_choose_apps">Elegir apps</string>
+    <string name="split_tunnel_picker_hint">Selecciona qué apps deben usar el túnel VPN. Esta app siempre se incluye automáticamente.</string>
+    <string name="document_load_failed">Lo sentimos, no se pudo cargar este documento.</string>
+
+    <plurals name="split_tunnel_app_count">
+        <item quantity="one">%d app seleccionada</item>
+        <item quantity="other">%d apps seleccionadas</item>
+    </plurals>
+</resources>

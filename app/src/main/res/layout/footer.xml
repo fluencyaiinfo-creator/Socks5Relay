@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Shared bottom bar included by every screen: the banner ad slot (hidden
+  until an ad actually loads, so there's no blank gap) sitting directly
+  above the footer credit line. AdManager fills bannerAdContainer
+  automatically for whichever screen is on top — see AdManager.attachBanner.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="?android:attr/windowBackground">
+
+    <FrameLayout
+        android:id="@+id/bannerAdContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:visibility="gone" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:padding="8dp"
+        android:textSize="11sp"
+        android:textColor="#888888"
+        android:text="@string/footer_text" />
+
+</LinearLayout>

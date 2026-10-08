@@ -1,0 +1,23 @@
+<resources>
+    <!-- Brand blues — softer primary + a deeper accent, replacing the previous single sharp blue (#2962FF). -->
+    <color name="brand_primary">#4E91FD</color>
+    <color name="brand_primary_dark">#2C2CFF</color>
+
+    <color name="ic_launcher_background">#4E91FD</color>
+
+    <color name="log_success">#2E7D32</color>
+    <color name="log_error">#C62828</color>
+    <color name="log_warn">#EF6C00</color>
+    <color name="log_info">#616161</color>
+
+    <color name="status_connected_green">#2E7D32</color>
+    <color name="status_disconnected_gray">#616161</color>
+    <color name="status_reconnecting_orange">#EF6C00</color>
+    <color name="status_blocked_red">#C62828</color>
+    <color name="button_disconnect_red">#C62828</color>
+    <color name="button_connect_default">#4E91FD</color>
+    <color name="proxy_health_good">#2E7D32</color>
+    <color name="proxy_health_bad">#C62828</color>
+    <color name="proxy_health_unknown">#F9A825</color>
+</resources>
+
