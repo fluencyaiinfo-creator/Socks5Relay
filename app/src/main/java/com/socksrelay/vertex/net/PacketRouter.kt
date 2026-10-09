@@ -56,9 +56,45 @@ class PacketRouter(
     private val outputLock = Any()
     private val flowsOpened = AtomicInteger(0)
     private val flowsFailed = AtomicInteger(0)
+    @Volatile private var tunOutput: FileOutputStream? = null
+    private var quicNoticeLogged = false
+
+    /**
+     * Abruptly ends every established TCP flow with a RST to the device.
+     * Used when the phone switches networks: connections opened over the old
+     * network are dead but would otherwise sit there until they time out
+     * (apps look frozen). A RST makes apps notice immediately and reconnect
+     * over the new network. Returns how many flows were reset.
+     */
+    fun resetAllFlows(): Int {
+        val out = tunOutput ?: return 0
+        var count = 0
+        for (session in sessions.values.toList()) {
+            val client = session.clientAddress ?: continue
+            if (!session.established) continue
+            session.reset = true
+            synchronized(session.writeLock) {
+                writeToTun(out, TcpPacket.buildSegment(
+                    sourceAddress = session.remoteAddress,
+                    sourcePort = session.remotePort,
+                    destAddress = client,
+                    destPort = session.localPort,
+                    seq = session.nextSeqToClient,
+                    ack = session.nextAckToClient,
+                    flags = TcpPacket.FLAG_RST,
+                    payload = ByteArray(0)
+                ))
+            }
+            runCatching { session.socket?.close() }
+            sessions.remove(session.localPort)
+            count++
+        }
+        return count
+    }
 
     fun run(input: FileInputStream, output: FileOutputStream, isRunning: () -> Boolean) {
         AppLog.i(TAG, "Packet router loop starting")
+        tunOutput = output
         val buffer = ByteArray(32767)
         var packetsRead = 0
         var ipv6Dropped = 0L
@@ -146,6 +182,7 @@ class PacketRouter(
             remotePort = tcp.destinationPort,
             clientInitialSeq = tcp.sequenceNumber
         )
+        session.clientAddress = ip.sourceAddress
         sessions[tcp.sourcePort] = session
 
         // Connecting via the proxy is blocking I/O, so do it off the router
@@ -203,14 +240,16 @@ class PacketRouter(
                 }
             }
         } catch (e: IOException) {
-            AppLog.i(TAG, "Socket closed for port ${session.localPort}: ${e.message}")
+            if (!session.reset) AppLog.i(TAG, "Socket closed for port ${session.localPort}: ${e.message}")
         } finally {
-            AppLog.i(TAG, "Flow on port ${session.localPort} closed after relaying $bytesRelayed bytes to device")
-            synchronized(session.writeLock) {
-                writeToTun(output, buildTcpSegment(session, ip, TcpPacket.FLAG_FIN or TcpPacket.FLAG_ACK, ByteArray(0)))
-                session.nextSeqToClient++
+            if (!session.reset) {
+                AppLog.i(TAG, "Flow on port ${session.localPort} closed after relaying $bytesRelayed bytes to device")
+                synchronized(session.writeLock) {
+                    writeToTun(output, buildTcpSegment(session, ip, TcpPacket.FLAG_FIN or TcpPacket.FLAG_ACK, ByteArray(0)))
+                    session.nextSeqToClient++
+                }
+                sessions.remove(session.localPort)
             }
-            sessions.remove(session.localPort)
             runCatching { socket.close() }
         }
     }
@@ -266,6 +305,18 @@ class PacketRouter(
         val offset = ip.payloadOffset
         val srcPort = ((buffer[offset].toInt() and 0xFF) shl 8) or (buffer[offset + 1].toInt() and 0xFF)
         val dstPort = ((buffer[offset + 2].toInt() and 0xFF) shl 8) or (buffer[offset + 3].toInt() and 0xFF)
+        if (dstPort == 443) {
+            // QUIC / HTTP3. Can't be proxied (no UDP support), so answer with
+            // an ICMP "port unreachable" at once. Browsers and apps then fall
+            // back to normal HTTPS immediately instead of waiting out a
+            // timeout on every new site.
+            if (!quicNoticeLogged) {
+                quicNoticeLogged = true
+                AppLog.i(TAG, "QUIC (UDP 443) is not supported through the proxy — apps will use normal HTTPS instead")
+            }
+            sendPortUnreachable(ip, buffer, output)
+            return
+        }
         if (dstPort != 53) return // TODO: general UDP relay via SOCKS5 UDP ASSOCIATE
 
         val query = buffer.copyOfRange(offset + 8, offset + ip.payloadLength)
@@ -301,10 +352,23 @@ class PacketRouter(
             val ipHeader = IpV4Packet.buildHeader(
                 ip.destinationAddress, ip.sourceAddress, IpV4Packet.PROTOCOL_UDP, udpHeader.size + response.size
             )
-            synchronized(outputLock) {
-                output.write(ipHeader + udpHeader + response)
-            }
+            writeToTun(output, ipHeader + udpHeader + response)
         }, "DnsProxy-$srcPort").start()
+    }
+
+    /** Replies to a UDP datagram with ICMP "destination unreachable / port unreachable" (type 3, code 3). */
+    private fun sendPortUnreachable(ip: IpV4Packet, buffer: ByteArray, output: FileOutputStream) {
+        // ICMP errors quote the offending IP header plus the first 8 bytes of its payload.
+        val quoted = minOf(ip.headerLength + 8, ip.totalLength, buffer.size)
+        val icmp = ByteArray(8 + quoted)
+        icmp[0] = 3 // destination unreachable
+        icmp[1] = 3 // port unreachable
+        System.arraycopy(buffer, 0, icmp, 8, quoted)
+        val sum = IpV4Packet.checksum(icmp, 0, icmp.size)
+        icmp[2] = ((sum shr 8) and 0xFF).toByte()
+        icmp[3] = (sum and 0xFF).toByte()
+        val header = IpV4Packet.buildHeader(ip.destinationAddress, ip.sourceAddress, 1 /* ICMP */, icmp.size)
+        writeToTun(output, header + icmp)
     }
 
     /** Caller is responsible for holding `session.writeLock` when the write depends on session seq/ack state. */
