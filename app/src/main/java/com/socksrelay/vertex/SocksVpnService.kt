@@ -10,12 +10,16 @@ import android.net.VpnService
 import android.os.Build
 import android.os.ParcelFileDescriptor
 import com.socksrelay.vertex.log.AppLog
+import com.socksrelay.vertex.net.DnsCache
+import com.socksrelay.vertex.net.NetworkMonitor
 import com.socksrelay.vertex.net.PacketRouter
 import com.socksrelay.vertex.net.ProxyHealthChecker
 import com.socksrelay.vertex.net.ProxyProtocol
 import com.socksrelay.vertex.net.VpnProtect
 import java.io.FileInputStream
 import java.io.FileOutputStream
+import java.util.concurrent.Semaphore
+import java.util.concurrent.TimeUnit
 
 /**
  * Owns the tun interface. This is the Android-mandated boilerplate for any
@@ -90,6 +94,16 @@ class SocksVpnService : VpnService() {
     private var healthThread: Thread? = null
     @Volatile private var running = false
     @Volatile private var healthMonitorRunning = false
+
+    // Network-change handling: the monitor reports changes of the phone's
+    // real connection; the semaphores let it wake the health-check and
+    // reconnect loops immediately instead of letting them sleep out their
+    // full interval.
+    private var networkMonitor: NetworkMonitor? = null
+    @Volatile private var networkAvailable = true
+    @Volatile private var activeRouter: PacketRouter? = null
+    private val healthWake = Semaphore(0)
+    private val reconnectWake = Semaphore(0)
     private var currentProxyHost: String = ""
     private var currentProxyPort: Int = 0
 
@@ -129,6 +143,7 @@ class SocksVpnService : VpnService() {
                 cancelReconnect()
                 userStopped = false
                 quickDrops = 0
+                startNetworkMonitor()
                 startForeground(NOTIFICATION_ID, buildNotification(getString(R.string.vpn_notification_title)))
                 startRelay(protocol, host, port, username, password)
             }
@@ -136,10 +151,11 @@ class SocksVpnService : VpnService() {
         return START_STICKY
     }
 
-    private fun startRelay(protocol: ProxyProtocol, proxyHost: String, proxyPort: Int, username: String?, password: String?) {
+    /** Returns true once the tunnel is up and relaying, false if it could not be established. */
+    private fun startRelay(protocol: ProxyProtocol, proxyHost: String, proxyPort: Int, username: String?, password: String?): Boolean {
         if (running) {
             AppLog.i(TAG, "startRelay() called while already running — ignoring")
-            return
+            return false
         }
 
         lastProtocol = protocol
@@ -199,19 +215,34 @@ class SocksVpnService : VpnService() {
                     "actually granted, or another VPN app grabbed it first. Try disconnecting any other " +
                     "VPN app and reconnecting from this app's Connect button (not just relying on a " +
                     "previous grant).")
+            if (tunInterface != null) {
+                // Kill Switch is holding the old tunnel up (blocking, not
+                // leaking) while we reconnect. Keep holding it and let the
+                // reconnect loop try again — tearing everything down here
+                // would open the very leak the Kill Switch exists to prevent.
+                return false
+            }
             reconnecting = false
             ConnectionState.setStatus(ConnectionState.Status.DISCONNECTED)
             stopSelf()
-            return
+            return false
         }
         AppLog.success(TAG, "VPN interface established — tun file descriptor is live")
+        val previousTunnel = tunInterface
         tunInterface = iface
+        // If a Kill-Switch hold kept the old (reader-less, traffic-blocking)
+        // tunnel up, the new one is in place now, so closing the old one
+        // can't open a gap.
+        previousTunnel?.close()
         running = true
         currentProxyHost = proxyHost
         currentProxyPort = proxyPort
         ConnectionStats.start(protocol, proxyHost, proxyPort)
         ConnectionState.setStatus(ConnectionState.Status.CONNECTED)
         lastEstablishedAt = System.currentTimeMillis()
+        // A different proxy can mean a different exit location, so don't
+        // serve DNS answers cached for the previous one.
+        DnsCache.clear()
         startHealthMonitor(proxyHost, proxyPort)
 
         val router = PacketRouter(
@@ -224,6 +255,7 @@ class SocksVpnService : VpnService() {
             proxyUsername = username,
             proxyPassword = password
         )
+        activeRouter = router
 
         routerThread = Thread({
             try {
@@ -247,6 +279,50 @@ class SocksVpnService : VpnService() {
             TAG, "===== CONNECTED. READY TO USE =====",
             "All your traffic now goes through [$protocol] $proxyHost:$proxyPort."
         )
+        return true
+    }
+
+    /**
+     * Reacts to the phone's real network changing (Wi-Fi <-> mobile, a
+     * network dropping out, airplane mode, ...):
+     *  - Tunnel up: RST every open connection (they were bound to the old
+     *    network and would otherwise hang until they time out) so apps
+     *    reconnect over the new one at once, and run a health check NOW.
+     *  - Auto-reconnecting: wake the reconnect loop right away, with its
+     *    backoff restarted, instead of waiting out a long delay.
+     * No network at all is not the proxy's fault, so it never counts toward
+     * giving up (see the health monitor).
+     */
+    private fun startNetworkMonitor() {
+        if (networkMonitor != null) return
+        networkAvailable = true
+        networkMonitor = NetworkMonitor(this, object : NetworkMonitor.Listener {
+            override fun onNetworkLost() {
+                networkAvailable = false
+                if (userStopped) return
+                AppLog.w(TAG, "No internet connection — the VPN will reconnect as soon as a network is back")
+            }
+
+            override fun onNetworkChanged() {
+                networkAvailable = true
+                if (userStopped) return
+                AppLog.i(TAG, "Network changed — refreshing the connection")
+                if (reconnecting) {
+                    reconnectWake.release()
+                } else if (running) {
+                    val reset = activeRouter?.resetAllFlows() ?: 0
+                    if (reset > 0) {
+                        AppLog.i(TAG, "Reset $reset open connection(s) so apps reconnect over the new network")
+                    }
+                    healthWake.release()
+                }
+            }
+        }).also { it.start() }
+    }
+
+    private fun stopNetworkMonitor() {
+        networkMonitor?.stop()
+        networkMonitor = null
     }
 
     /**
@@ -261,12 +337,26 @@ class SocksVpnService : VpnService() {
     private fun beginAutoReconnect(reason: String) {
         if (reconnecting || userStopped) return
 
+        // Kill Switch ON means "never let traffic out unproxied", so while
+        // reconnecting the tunnel is HELD UP with nothing reading it (every
+        // packet just goes nowhere = blocked) instead of being released.
+        // Kill Switch OFF releases it so the normal network works meanwhile.
+        val holdTunnel = SettingsStore.isKillSwitchEnabled(this)
+
         val now = System.currentTimeMillis()
         quickDrops = if (now - lastEstablishedAt < QUICK_DROP_WINDOW_MS) quickDrops + 1 else 0
         if (quickDrops >= MAX_QUICK_DROPS) {
-            AppLog.e(TAG, "The connection keeps dropping right after connecting — giving up",
-                "Check that the proxy is working (use Test proxy), then connect again.")
-            giveUpAndDisconnect()
+            if (holdTunnel) {
+                releaseRouterKeepTunnel()
+                ConnectionState.setStatus(ConnectionState.Status.BLOCKED)
+                AppLog.e(TAG, "The connection keeps dropping right after connecting — traffic stays blocked",
+                    "Kill Switch is ON, so nothing is allowed out unproxied. Tap Disconnect, check that the " +
+                        "proxy is working (use Test proxy), then connect again.")
+            } else {
+                AppLog.e(TAG, "The connection keeps dropping right after connecting — giving up",
+                    "Check that the proxy is working (use Test proxy), then connect again.")
+                giveUpAndDisconnect()
+            }
             return
         }
 
@@ -277,47 +367,85 @@ class SocksVpnService : VpnService() {
         val password = lastPassword
 
         reconnecting = true
-        AppLog.w(TAG, "$reason — reconnecting automatically to $host:$port...")
-        closeTunnel()
+        reconnectWake.drainPermits()
+        AppLog.w(TAG, "$reason — reconnecting automatically to $host:$port...",
+            if (holdTunnel) "Kill Switch is ON, so traffic stays blocked (not leaked) until the proxy is back." else null)
+        if (holdTunnel) releaseRouterKeepTunnel() else closeTunnel()
         ConnectionState.setStatus(ConnectionState.Status.RECONNECTING)
 
         reconnectThread = Thread({
             var attempt = 0
-            var proxyBack = false
-            while (reconnecting && !userStopped && attempt < MAX_RECONNECT_ATTEMPTS) {
+            var restored = false
+            while (reconnecting && !userStopped) {
+                // Kill Switch ON never gives up on its own (that would mean
+                // releasing the tunnel); OFF stops after a while.
+                if (!holdTunnel && attempt >= MAX_RECONNECT_ATTEMPTS) break
                 attempt++
                 val wait = minOf(
                     RECONNECT_BASE_DELAY_MS * (1L shl minOf(attempt - 1, 4)),
                     RECONNECT_MAX_DELAY_MS
                 )
                 try {
-                    Thread.sleep(wait)
+                    // Sleep out the delay, unless the network changes: then
+                    // try straight away and restart the backoff.
+                    if (reconnectWake.tryAcquire(wait, TimeUnit.MILLISECONDS)) {
+                        reconnectWake.drainPermits()
+                        attempt = 1
+                    }
                 } catch (e: InterruptedException) {
                     break
                 }
                 if (!reconnecting || userStopped) break
 
-                // The tunnel is down, so this probe uses the normal network
-                // and no protect() is needed.
-                if (!ProxyHealthChecker.isReachable({ true }, host, port)) {
-                    AppLog.i(TAG, "Reconnect attempt $attempt/$MAX_RECONNECT_ATTEMPTS: $host:$port not reachable yet")
+                // With the tunnel released, this probe uses the normal
+                // network and needs no protect(). With it held, the probe
+                // MUST be protect()-ed or it would run into the blocked
+                // tunnel and always fail.
+                val proxyUp = if (holdTunnel) {
+                    ProxyHealthChecker.isReachable({ sock -> VpnProtect.protect(this, sock) }, host, port)
+                } else {
+                    ProxyHealthChecker.isReachable({ _ -> true }, host, port)
+                }
+                if (!proxyUp) {
+                    val outOf = if (holdTunnel) "" else "/$MAX_RECONNECT_ATTEMPTS"
+                    AppLog.i(TAG, "Reconnect attempt $attempt$outOf: $host:$port not reachable yet")
                     continue
                 }
-                proxyBack = true
-                break
-            }
 
-            if (proxyBack && reconnecting && !userStopped) {
                 AppLog.i(TAG, "$host:$port is reachable again — restoring the VPN tunnel")
                 reconnecting = false
-                startRelay(protocol, host, port, username, password)
-                if (userStopped) closeTunnel() // user hit Disconnect mid-restore
-            } else if (reconnecting && !userStopped) {
+                if (startRelay(protocol, host, port, username, password)) {
+                    restored = true
+                    if (userStopped) closeTunnel() // user hit Disconnect mid-restore
+                    break
+                }
+                // Couldn't rebuild the tunnel this time. If it's being held
+                // (Kill Switch), keep trying; otherwise startRelay already
+                // shut things down.
+                if (tunInterface == null) break
+                reconnecting = true
+            }
+
+            if (!restored && reconnecting && !userStopped) {
                 AppLog.e(TAG, "Could not reconnect to $host:$port after $MAX_RECONNECT_ATTEMPTS attempts — giving up",
                     "The proxy may be permanently down. Try Test proxy, or connect with a different one.")
                 giveUpAndDisconnect()
             }
         }, "AutoReconnect").also { it.start() }
+    }
+
+    /**
+     * Stops relaying and health-checking but keeps the tun interface OPEN
+     * with nothing reading it. Every packet apps send into it just goes
+     * nowhere, so traffic is blocked rather than leaking out on the real
+     * network. Used by the Kill Switch while reconnecting.
+     */
+    private fun releaseRouterKeepTunnel() {
+        running = false
+        activeRouter = null
+        stopHealthMonitor()
+        routerThread?.interrupt()
+        routerThread = null
     }
 
     private fun giveUpAndDisconnect() {
@@ -409,9 +537,14 @@ class SocksVpnService : VpnService() {
         healthMonitorRunning = true
         healthThread = Thread({
             var consecutiveFailures = 0
+            var degraded = false
+            healthWake.drainPermits()
             while (healthMonitorRunning && running) {
                 try {
-                    Thread.sleep(HEALTH_CHECK_INTERVAL_MS)
+                    // One interval — or less, if a network change wakes us.
+                    if (healthWake.tryAcquire(HEALTH_CHECK_INTERVAL_MS, TimeUnit.MILLISECONDS)) {
+                        healthWake.drainPermits()
+                    }
                 } catch (e: InterruptedException) {
                     break
                 }
@@ -419,13 +552,25 @@ class SocksVpnService : VpnService() {
 
                 val healthy = ProxyHealthChecker.isReachable({ s -> VpnProtect.protect(this, s) }, host, port)
                 if (healthy) {
-                    if (consecutiveFailures > 0) {
+                    if (degraded) {
                         AppLog.success(TAG, "===== CONNECTED. READY TO USE =====",
-                            "Reconnected to $host:$port after $consecutiveFailures failed check(s).")
+                            if (consecutiveFailures > 0) "Reconnected to $host:$port after $consecutiveFailures failed check(s)."
+                            else "Reconnected to $host:$port after the network came back.")
                         consecutiveFailures = 0
+                        degraded = false
                         ConnectionState.setStatus(ConnectionState.Status.CONNECTED)
                         updateNotification(getString(R.string.vpn_notification_title))
                     }
+                    continue
+                }
+
+                degraded = true
+                if (!networkAvailable) {
+                    // The phone has no internet at all — that says nothing
+                    // about the proxy, so don't count it toward giving up.
+                    // The network monitor wakes this loop the moment a
+                    // network returns.
+                    ConnectionState.setStatus(ConnectionState.Status.RECONNECTING)
                     continue
                 }
 
@@ -503,6 +648,7 @@ class SocksVpnService : VpnService() {
     /** Releases the tun interface and its threads, without touching connection state. */
     private fun closeTunnel() {
         running = false
+        activeRouter = null
         stopHealthMonitor()
         routerThread?.interrupt()
         routerThread = null
@@ -512,6 +658,7 @@ class SocksVpnService : VpnService() {
 
     override fun onDestroy() {
         userStopped = true
+        stopNetworkMonitor()
         cancelReconnect()
         stopRelay()
         super.onDestroy()
@@ -524,6 +671,7 @@ class SocksVpnService : VpnService() {
         // Permission is gone, so reconnecting automatically can't work (and
         // would fight whatever took over the VPN).
         userStopped = true
+        stopNetworkMonitor()
         cancelReconnect()
         stopRelay()
         ConnectionState.setStatus(ConnectionState.Status.DISCONNECTED)
