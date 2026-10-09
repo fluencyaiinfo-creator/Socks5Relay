@@ -26,6 +26,16 @@ class TcpSession(
     var established = false
     var closing = false
 
+    /** The device-side address of this flow (needed to craft packets outside the normal receive path). */
+    var clientAddress: InetAddress? = null
+
+    /**
+     * Set when the router deliberately killed this flow (e.g. the phone
+     * switched networks): the device was already sent a RST, so the normal
+     * "socket closed" cleanup must not also send a FIN or log noise.
+     */
+    @Volatile var reset = false
+
     // Our "server-side" ISN for this spoofed connection.
     var ourInitialSeq: Long = (Math.random() * 0xFFFFFFFL).toLong()
 
