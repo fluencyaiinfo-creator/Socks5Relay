@@ -22,18 +22,22 @@ import java.net.Socket
  * /[Socks4Client]/[HttpProxyClient]). This works with all three supported
  * proxy protocols, unlike SOCKS5 UDP ASSOCIATE (SOCKS4 and HTTP proxies
  * don't support UDP at all, and free proxies often don't implement UDP
- * ASSOCIATE reliably even when using SOCKS5) — a plain CONNECT to
- * [UPSTREAM_DNS]:53 is the most broadly compatible option.
+ * ASSOCIATE reliably even when using SOCKS5) — a plain CONNECT to the
+ * upstream resolver's port 53 is the most broadly compatible option.
  *
- * There is deliberately NO fallback to direct/unproxied DNS if this fails —
- * failing the lookup is safer than silently leaking it. If proxied DNS
- * keeps failing, that usually means the proxy itself is down (see
- * [com.socksrelay.vertex.SocksVpnService]'s health monitor / kill switch),
- * not that DNS specifically needs a workaround.
+ * Two upstream resolvers are tried in order ([UPSTREAMS]) because free
+ * proxies frequently block one particular resolver address. BOTH are
+ * reached through the proxy: the backup is for reliability, never a way
+ * around the proxy. There is deliberately NO fallback to direct/unproxied
+ * DNS — failing the lookup is safer than silently leaking it. If proxied
+ * DNS keeps failing, that usually means the proxy itself is down (see
+ * [com.socksrelay.vertex.SocksVpnService]'s health monitor / kill switch).
+ *
+ * Answers are cached briefly ([DnsCache]) so repeat lookups are instant.
  */
 object UdpDnsProxy {
     private const val TAG = "UdpDnsProxy"
-    private const val UPSTREAM_DNS = "1.1.1.1"
+    private val UPSTREAMS = listOf("1.1.1.1", "8.8.8.8")
     private const val TIMEOUT_MS = 5000
 
     fun resolveViaProxy(
@@ -45,38 +49,73 @@ object UdpDnsProxy {
         proxyPassword: String?,
         query: ByteArray
     ): ByteArray? {
-        return try {
-            val socket = ProxyClient.connect(
-                protocol = protocol,
-                protectSocket = protectSocket,
-                proxyHost = proxyHost,
-                proxyPort = proxyPort,
-                destinationHost = UPSTREAM_DNS,
-                destPort = 53,
-                username = proxyUsername,
-                password = proxyPassword
-            )
-            socket.soTimeout = TIMEOUT_MS
-            socket.use {
-                val output = it.getOutputStream()
-                val length = query.size
-                output.write(byteArrayOf(((length shr 8) and 0xFF).toByte(), (length and 0xFF).toByte()))
-                output.write(query)
-                output.flush()
+        DnsCache.get(query)?.let { return it }
 
-                val input = it.getInputStream()
-                val lengthBuffer = ByteArray(2)
-                readFully(input, lengthBuffer)
-                val responseLength = ((lengthBuffer[0].toInt() and 0xFF) shl 8) or (lengthBuffer[1].toInt() and 0xFF)
-                val responseBuffer = ByteArray(responseLength)
-                readFully(input, responseBuffer)
-                responseBuffer
+        var lastError: String? = null
+        var lastResponse: ByteArray? = null
+        for (upstream in UPSTREAMS) {
+            try {
+                val response = queryUpstream(
+                    upstream, protocol, protectSocket, proxyHost, proxyPort, proxyUsername, proxyPassword, query
+                )
+                // SERVFAIL (2) / REFUSED (5) from one resolver: give the
+                // other one a chance before accepting the failure.
+                val rcode = if (response.size >= 4) response[3].toInt() and 0x0F else 0
+                if (rcode == 2 || rcode == 5) {
+                    lastResponse = response
+                    continue
+                }
+                DnsCache.put(query, response)
+                return response
+            } catch (e: Exception) {
+                lastError = e.message
             }
-        } catch (e: Exception) {
-            AppLog.w(TAG, "Proxied DNS resolution failed: ${e.message}",
-                "Couldn't resolve via the proxy (DNS-over-TCP to $UPSTREAM_DNS:53 through it). This usually " +
-                    "means the proxy itself is unreachable right now — check the connection status, not just DNS.")
-            null
+        }
+
+        lastResponse?.let { return it }
+
+        AppLog.w(TAG, "Proxied DNS resolution failed: $lastError",
+            "Couldn't resolve via the proxy (DNS-over-TCP to ${UPSTREAMS.joinToString(" and ")} through it). " +
+                "This usually means the proxy itself is unreachable right now — check the connection status, not just DNS.")
+        return null
+    }
+
+    @Throws(IOException::class)
+    private fun queryUpstream(
+        upstream: String,
+        protocol: ProxyProtocol,
+        protectSocket: (Socket) -> Boolean,
+        proxyHost: String,
+        proxyPort: Int,
+        proxyUsername: String?,
+        proxyPassword: String?,
+        query: ByteArray
+    ): ByteArray {
+        val socket = ProxyClient.connect(
+            protocol = protocol,
+            protectSocket = protectSocket,
+            proxyHost = proxyHost,
+            proxyPort = proxyPort,
+            destinationHost = upstream,
+            destPort = 53,
+            username = proxyUsername,
+            password = proxyPassword
+        )
+        socket.soTimeout = TIMEOUT_MS
+        return socket.use {
+            val output = it.getOutputStream()
+            val length = query.size
+            output.write(byteArrayOf(((length shr 8) and 0xFF).toByte(), (length and 0xFF).toByte()))
+            output.write(query)
+            output.flush()
+
+            val input = it.getInputStream()
+            val lengthBuffer = ByteArray(2)
+            readFully(input, lengthBuffer)
+            val responseLength = ((lengthBuffer[0].toInt() and 0xFF) shl 8) or (lengthBuffer[1].toInt() and 0xFF)
+            val responseBuffer = ByteArray(responseLength)
+            readFully(input, responseBuffer)
+            responseBuffer
         }
     }
 
